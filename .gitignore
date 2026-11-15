@@ -1,0 +1,6 @@
+# Data Shopee berisi data pembeli -> jangan di-commit
+*.xlsx
+*.xlsm
+*.csv
+hasil/
+__pycache__/

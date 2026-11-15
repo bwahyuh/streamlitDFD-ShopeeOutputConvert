@@ -1,0 +1,7 @@
+[server]
+# Batas ukuran per file upload (MB)
+maxUploadSize = 200
+
+[browser]
+# Jangan kirim statistik pemakaian ke Streamlit
+gatherUsageStats = false
