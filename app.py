@@ -286,7 +286,7 @@ with tab0:
                    "Value Nett = dana diterima (Total Penghasilan); Total Diskon = Gross − Nett.")
         st.markdown("**Per Produk**")
         show_df(fmt_report(report["by_produk"]))
-        st.markdown("**Per Bulan & Produk** (bulan pesanan dibuat)")
+        st.markdown("**Per Bulan & Produk** (bulan Waktu Pengiriman Diatur)")
         show_df(fmt_report(report["by_bulan"]))
         cek = report["mapping"][report["mapping"]["Status"] != "OK"]
         if len(cek):

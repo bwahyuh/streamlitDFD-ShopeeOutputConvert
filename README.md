@@ -66,6 +66,7 @@ Output Excel diawali sheet **Report Sales** (pivot per Produk dan per Bulan × P
 | Total Diskon | jumlah komponen di atas = Value Gross − Value Nett |
 | Value Nett | Income "Total Penghasilan" (dana diterima) |
 
+Tanggal dan Bulan di report memakai **Waktu Pengiriman Diatur** (fallback ke Waktu Pesanan Dibuat bila kosong).
 Hanya pesanan yang sudah ada di Income yang dihitung. Bundling dipecah ke produk dasar
 (Tongkol 250gr, Tongkol 500gr, Tuna Can 165gr, …) dan nilainya dibagi proporsional terhadap harga standar.
 Nama produk baru yang tidak dikenali muncul sebagai "Tidak terpetakan" di sheet Mapping Produk —

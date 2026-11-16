@@ -11,6 +11,8 @@ Definisi (per baris produk Order yang sudah ada di Income):
   Total Diskon           = jumlah 6 komponen di atas
   Value Nett             = Value Gross - Total Diskon = Income "Total Penghasilan" (dana yang diterima)
 
+Tanggal & Bulan report memakai "Waktu Pengiriman Diatur" (bukan Waktu Pesanan Dibuat).
+
 Bundling / dus dipecah ke produk dasar (Tongkol 250gr, Tongkol 500gr, Tuna Can 165gr, ...).
 Nilai rupiah satu baris bundling dibagi ke produk dasarnya secara proporsional terhadap harga standar.
 """
@@ -121,7 +123,7 @@ def build_detail(gab: pd.DataFrame) -> pd.DataFrame:
     """1 baris = 1 produk dasar dalam 1 baris Order yang sudah ada di Income."""
     g = gab[gab["Status Match Income"].astype(str).str.startswith("Cocok")].copy()
     if g.empty:
-        return pd.DataFrame(columns=["MARKETPLACE", "Bulan", "Tanggal Pesanan", KEY, "PRODUK", "Qty Produk", "Qty Retur"] + MONEY)
+        return pd.DataFrame(columns=["MARKETPLACE", "Bulan", "Tanggal Pengiriman", KEY, "PRODUK", "Qty Produk", "Qty Retur"] + MONEY)
 
     num = lambda c: pd.to_numeric(g[c], errors="coerce").fillna(0)  # noqa: E731
     g["_gross"] = num("Harga Awal") * num("Jumlah")
@@ -147,7 +149,9 @@ def build_detail(gab: pd.DataFrame) -> pd.DataFrame:
                   - g["_refund"] - g["_nett"])
     qty = num("Jumlah")
     ret = num("Returned quantity") if "Returned quantity" in g else 0 * qty
-    tgl = pd.to_datetime(g["Waktu Pesanan Dibuat"], errors="coerce")
+    # Tanggal report = Waktu Pengiriman Diatur (fallback ke Waktu Pesanan Dibuat jika kosong).
+    tgl = pd.to_datetime(g["Waktu Pengiriman Diatur"], errors="coerce").fillna(
+        pd.to_datetime(g["Waktu Pesanan Dibuat"], errors="coerce"))
 
     rows = []
     for i in range(len(g)):
@@ -158,7 +162,7 @@ def build_detail(gab: pd.DataFrame) -> pd.DataFrame:
             rows.append({
                 "MARKETPLACE": MARKETPLACE,
                 "Bulan": tgl.iat[i].strftime("%Y-%m") if pd.notna(tgl.iat[i]) else "",
-                "Tanggal Pesanan": tgl.iat[i],
+                "Tanggal Pengiriman": tgl.iat[i],
                 KEY: g[KEY].iat[i],
                 "Nama Produk (Shopee)": g["Nama Produk"].iat[i],
                 "PRODUK": p,
@@ -175,7 +179,7 @@ def build_detail(gab: pd.DataFrame) -> pd.DataFrame:
             })
     d = pd.DataFrame(rows)
     d["Total Diskon"] = d[DISKON_PARTS].sum(axis=1)
-    cols = ["MARKETPLACE", "Bulan", "Tanggal Pesanan", KEY, "Nama Produk (Shopee)", "PRODUK", "Qty Produk", "Qty Retur"] + MONEY
+    cols = ["MARKETPLACE", "Bulan", "Tanggal Pengiriman", KEY, "Nama Produk (Shopee)", "PRODUK", "Qty Produk", "Qty Retur"] + MONEY
     return d[cols]
 
 
@@ -241,8 +245,8 @@ def write_report_sheets(xw, gab: pd.DataFrame) -> None:
     ws["A1"] = "REPORT SALES SHOPEE"
     ws["A1"].font = Font(bold=True, size=14)
     det = rep["detail"]
-    periode = f"{det['Tanggal Pesanan'].min():%d %b %Y} - {det['Tanggal Pesanan'].max():%d %b %Y}" if len(det) else "-"
-    ws["A2"] = f"Periode pesanan dibuat: {periode}. Hanya pesanan yang dananya sudah dilepas (ada di Income)."
+    periode = f"{det['Tanggal Pengiriman'].min():%d %b %Y} - {det['Tanggal Pengiriman'].max():%d %b %Y}" if len(det) else "-"
+    ws["A2"] = f"Periode berdasarkan Waktu Pengiriman Diatur: {periode}. Hanya pesanan yang dananya sudah dilepas (ada di Income)."
     ws["A3"] = ("Value Gross = Harga Awal x Jumlah. Value Nett = dana diterima (Income 'Total Penghasilan'). "
                 "Total Diskon = Value Gross - Value Nett = " + " + ".join(DISKON_PARTS) + ".")
     row = 5
@@ -266,7 +270,7 @@ def write_report_sheets(xw, gab: pd.DataFrame) -> None:
     fmt_table(ws, det, 0)
     for j, c in enumerate(det.columns, 1):
         ws.column_dimensions[get_column_letter(j)].width = 45 if c == "Nama Produk (Shopee)" else 16
-        if c == "Tanggal Pesanan":
+        if c == "Tanggal Pengiriman":
             for i in range(len(det)):
                 ws.cell(row=2 + i, column=j).number_format = "yyyy-mm-dd hh:mm"
 
